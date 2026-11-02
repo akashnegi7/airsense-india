@@ -1,0 +1,22 @@
+name: Daily data refresh
+on:
+  schedule: [{ cron: "30 1 * * *" }]   # 07:00 IST
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  etl:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install -r requirements.txt
+      - run: python -m airsense.etl.pipeline --days 365
+      - name: Commit refreshed database
+        run: |
+          git config user.name "airsense-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add -f data/airsense.db
+          git commit -m "chore: daily data refresh" || echo "no changes"
+          git push
